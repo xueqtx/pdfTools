@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- import CSS -->
+    <link rel="stylesheet" href="{{url_for('static', filename='index.css')}}">
+</head>
+<style>
+    .el-header, .el-footer {
+        background-color: #B3C0D1;
+        color: #333;
+        text-align: center;
+        line-height: 60px;
+    }
+    body > .el-container {
+        margin-bottom: 40px;
+    }
+    body,html{
+        height: 100%;
+    }
+    .el-container{
+        height: 100%;
+    }
+    .el-main {
+        text-align: center;
+    }
+</style>
+<body>
+<div id="app">
+    <template>
+        <el-container>
+            <el-header>Header</el-header>
+            <el-main>
+                <el-upload
+                        :on-success="handleSuccess"
+                        :before-remove="beforeRemove"
+                        :on-preview="handlePreview"
+                        :on-remove="handleRemove"
+                        :file-list="fileList"
+                        class="upload-demo"
+                        drag
+                        action="/upload.do"
+                        multiple>
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                    <div class="el-upload__tip" slot="tip">上传多个pdf发票获取一个整合pdf文件进行打印(可以打包试试哦)</div>
+                </el-upload>
+                <div>
+                    <el-button type="primary" @click="submitUpload">开始转换</el-button>
+                    <el-button @click="cancel()">清除</el-button>
+                </div>
+            </el-main>
+        </el-container>
+    </template>
+</div>
+</body>
+<!-- import Vue before Element -->
+<script src="{{url_for('static', filename='vue.js')}}"></script>
+<!-- import JavaScript -->
+<script src="{{url_for('static', filename='index.js')}}"></script>
+<script src="{{url_for('static', filename='axios.min.js')}}"></script>
+<script>
+    var vm =  new Vue({
+        el: '#app',
+        data: function() {
+            return {
+                fileList:[],
+            }
+        },
+        methods: {
+            handleSuccess(response, file, fileList) {
+                this.fileList = fileList
+            },
+            handleRemove(file, fileList) {
+                this.fileList = fileList;
+            },
+            beforeRemove(file, fileList) {
+                return this.$confirm(`确定移除 ${file.name}？`);
+            },
+            handlePreview(file) {
+                console.log(file);
+            },
+            submitUpload() {
+                let fileList = this.fileList;
+                axios({
+                    responseType: 'blob',
+                    method: 'post',
+                    url: '/transfer.do',
+                    data: {
+                        file_list: fileList,
+                    }
+                }).then(res => {
+                    let blob = new Blob([res.data], { type: `application/octet-stream;charset=utf-8` });
+                    // 获取heads中的filename文件名
+                    let downloadElement = document.createElement("a");
+                    // 创建下载的链接
+                    let href = window.URL.createObjectURL(blob);
+                    downloadElement.href = href;
+                    // 下载后文件名
+                    downloadElement.download = "combined_PDF.pdf";
+                    document.body.appendChild(downloadElement);
+                    // 点击下载
+                    downloadElement.click();
+                    // 下载完成移除元素
+                    document.body.removeChild(downloadElement);
+                    setTimeout(vm.cleanFile(),200)
+                }).catch(err => {
+                    this.$message.error(err.message)
+                })
+            },
+            cancel:function(){
+                // parent.vm.closeConfig();
+            },
+            cleanFile:function(){
+                axios({
+                    method: 'post',
+                    url: '/clean.do',
+                }).then(res => {
+                }).catch(err => {
+                    this.$message.error(err.message)
+                })
+            },
+        },
+        mounted: function () {},
+    })
+</script>
+</html>
