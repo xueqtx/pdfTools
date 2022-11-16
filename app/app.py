@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, jsonify,Response,send_file
 from datetime import timedelta
 from main import file_builder, pdf_merge, clean_files
+from flask_cors import CORS
+import os
 
 
 app = Flask(__name__, template_folder="templates", static_folder="templates/static")
-
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/', methods=['GET', 'POST'])  # 首页路由
 def index():
@@ -14,6 +16,8 @@ def index():
 @app.route('/upload.do', methods=['GET', 'POST'])
 def upload():
     try:
+        if not os.path.exists("tmp"):
+            os.mkdir("tmp")
         request.files['file'].save("tmp/" + request.files['file'].filename)
     except:
         return jsonify({"success": False})
@@ -35,8 +39,11 @@ def transfer():
 
 @app.route('/clean.do', methods=['GET', 'POST'])  # 文件转换方法
 def clean():
-    clean_files()
-    return "ok"
+    try:
+        clean_files()
+    except:
+        return jsonify({"success": False})
+    return jsonify({"success": True})
 
 
 if __name__ == '__main__':

@@ -24,9 +24,12 @@ def file_builder(file_list):
 
 
 def clean_files():
-    os.remove("combined_PDF.pdf")
-    shutil.rmtree("tmp")
-    os.mkdir("tmp")
+    if os.path.exists("combined_PDF.pdf"):
+        os.remove("combined_PDF.pdf")
+    if os.path.exists("tmp"):
+        shutil.rmtree("tmp")
+        os.mkdir("tmp")
+    return True
 
 # 这段是借鉴的，目前是把一张a4纸上面放两个pdf，具体程度待测试
 def pdf_merge(pdfs, output):
